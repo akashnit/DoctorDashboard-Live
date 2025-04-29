@@ -196,18 +196,16 @@ const Patients = () => {
                   <div className="flex justify-between">
                     <p>Problems</p>
                     <p>
-                      {Array.isArray(patient.problems)
-                        ? patient.problems.join(", ")
-                        : patient.problems || "Not specified"}
+                      {Array.isArray(patient?.problems) 
+                        ? patient.problems.join(", ") 
+                        : (patient?.problems || "Not specified")}
                     </p>
                   </div>
                   <div className="flex justify-between">
                     <p>Enrollment Date</p>
                     <p>
                       {patient.selectedProgram?.enrollmentDate
-                        ? new Date(
-                            patient.selectedProgram.enrollmentDate
-                          ).toLocaleDateString()
+                        ? new Date(patient.selectedProgram.enrollmentDate).toLocaleDateString()
                         : "Not enrolled"}
                     </p>
                   </div>

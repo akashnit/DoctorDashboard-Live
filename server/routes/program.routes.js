@@ -3,10 +3,11 @@ import { verifyJWT, verifyRoles } from "../middlewares/auth.middleware.js";
 import {
     getAllPrograms,
     enrollInProgram,
-    createProgram,
+    // createProgram,
     updateProgress,
     getEnrolledPrograms
 } from "../controllers/program.controller.js";
+import { addProgram } from "../controllers/admin.controller.js";
 
 const router = express.Router();
 
@@ -19,6 +20,6 @@ router.post("/:programId/enroll", verifyJWT, enrollInProgram);
 router.post("/:programId/progress", verifyJWT, updateProgress);
 
 // Admin routes
-router.post("/", verifyJWT, verifyRoles("admin"), createProgram);
+router.post("/", verifyJWT, verifyRoles("admin"), addProgram);
 
 export { router as programRoutes }; 

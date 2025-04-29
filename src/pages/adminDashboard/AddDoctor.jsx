@@ -416,27 +416,10 @@ const AddDoctor = () => {
 
     try {
       // Add the doctor with qualifications included
-      const assignedPrograms = selectedPrograms.map((program) => ({
-        program: program._id,
-        assignedDate: new Date(),
-        activeSubscribers: 0,
-        totalSubscribers: 0,
-        currentEarnings: 0,
-        totalEarnings: 0,
-        subscriptionMetrics: program.memberships?.map((membership) => ({
-          duration: Number(membership.duration.replace(/\D/g, "")), // Convert "3 months" to 3
-          price: membership.price, // Include price
-          activeSubscribers: 0,
-          totalSubscribers: 0,
-          currentEarnings: 0,
-          totalEarnings: 0,
-        })) || [],
-      }));
-
       const doctorResponse = await apiRequest(ENDPOINTS.ADD_DOCTOR, "POST", {
         ...formData,
         qualifications: selectedQualifications,
-        assignedPrograms: assignedPrograms, // Send the full structure instead of just IDs
+        programIds: formData.programIds, // Send just the programIds array as expected by the backend
       });
 
       console.log("Doctor added successfully:", doctorResponse);

@@ -84,15 +84,17 @@ const getAdminDashboardData = async () => {
   return result;
 };
 
-export const getAdminDashboard = async (req, res) => {
+export const getAdminDashboard = asyncHandler(async (req, res) => {
   try {
     const data = await getAdminDashboardData();
-    res.status(200).json({ success: true, data });
+    return res.status(200).json(
+      new ApiResponse(200, data, "Admin dashboard data fetched successfully")
+    );
   } catch (error) {
     console.error("Error fetching admin dashboard data:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    throw new ApiError(500, "Failed to fetch dashboard data");
   }
-};
+});
 
 
 // Doctor dashboard data

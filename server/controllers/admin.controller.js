@@ -11,10 +11,10 @@ import { Program } from "../models/program.models.js";
 
 // Get all doctors (with associated patient count)
 export const getAllDoctors = asyncHandler(async (req, res) => {
-  const doctors = await Doctor.find().populate(
-    "patients",
-    "name age problems"
-  );
+  const doctors = await Doctor.find()
+    .populate("patients", "name age problems")
+    .populate("assignedPrograms.program", "name description memberships");
+    
   return res.status(200).json(
     new ApiResponse(200, doctors, "Doctors fetched successfully")
   );
@@ -532,7 +532,7 @@ export const addProgram = asyncHandler(async (req, res) => {
         name,
         description,
         memberships,
-        createdBy: req.user.id // Assuming you have user info in req.user
+        createdBy: req.user.id
     });
 
     return res.status(201).json(new ApiResponse(201, newProgram, "Program created successfully"));

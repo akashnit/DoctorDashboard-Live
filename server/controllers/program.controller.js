@@ -69,24 +69,6 @@ export const enrollInProgram = asyncHandler(async (req, res) => {
     );
 });
 
-// Create a new program (admin only)
-export const createProgram = asyncHandler(async (req, res) => {
-    const { name, description, duration, focusAreas, difficultyLevel } = req.body;
-
-    const program = await Program.create({
-        name,
-        description,
-        duration,
-        focusAreas,
-        difficultyLevel,
-        createdBy: req.user.id
-    });
-
-    return res.status(201).json(
-        new ApiResponse(201, program, "Program created successfully")
-    );
-});
-
 // Update program progress
 export const updateProgress = asyncHandler(async (req, res) => {
     const { programId } = req.params;

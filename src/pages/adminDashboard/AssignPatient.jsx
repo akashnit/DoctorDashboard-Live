@@ -76,6 +76,16 @@ const AssignPatient = () => {
       setPatients(patientsRes.data || []);
       setDoctors(doctorsRes.data || []);
       setPrograms(programsRes.data || []);
+      
+      // Debugging
+      console.log('Fetched Doctors:', doctorsRes.data);
+      console.log('Fetched Programs:', programsRes.data);
+      // Check if doctors have assigned programs
+      if (doctorsRes.data && doctorsRes.data.length > 0) {
+        doctorsRes.data.forEach(doctor => {
+          console.log(`Doctor ${doctor.name} has assignedPrograms:`, doctor.assignedPrograms);
+        });
+      }
     } catch (err) {
       console.error("Error fetching data:", err);
       const errorFeedback = getErrorFeedback(err);
@@ -103,14 +113,18 @@ const AssignPatient = () => {
     } else if (name === "programId") {
       // Find the program to get default price and membership details
       const selectedProgram = programs.find(p => p._id === value);
-      const defaultPrice = selectedProgram?.membership?.price || 0; // Fetch price from membership details
+      
+      // Default to first membership option if available
+      const defaultMembership = selectedProgram?.memberships && selectedProgram.memberships.length > 0 
+        ? selectedProgram.memberships[0] 
+        : { duration: "3 months", price: 0 };
       
       setFormData({
         ...formData,
         programId: value,
         membership: {
-          duration: selectedProgram?.membership?.duration || "3 months", // Fetch duration from membership details
-          price: defaultPrice
+          duration: defaultMembership.duration || "3 months",
+          price: defaultMembership.price || 0
         }
       });
     } else if (name === "duration" || name === "price") {
@@ -225,17 +239,42 @@ const AssignPatient = () => {
     if (!formData.doctorId) return [];
     
     const selectedDoctor = doctors.find(d => d._id === formData.doctorId);
-    if (!selectedDoctor || !selectedDoctor.assignedPrograms) return [];
+    if (!selectedDoctor) return [];
     
-    // Get program IDs assigned to the doctor
-    const assignedProgramIds = selectedDoctor.assignedPrograms.map(p => 
-      typeof p === 'object' ? p.program : p
-    );
+    // Check if doctor has assigned programs
+    if (!selectedDoctor.assignedPrograms || !Array.isArray(selectedDoctor.assignedPrograms) || selectedDoctor.assignedPrograms.length === 0) {
+      console.log('Doctor has no assigned programs:', selectedDoctor.name);
+      return [];
+    }
+    
+    // Log for debugging
+    console.log('Selected Doctor:', selectedDoctor.name);
+    console.log('Assigned Programs:', selectedDoctor.assignedPrograms);
     
     // Filter programs available for this doctor
-    return programs.filter(program => 
-      assignedProgramIds.includes(program._id) && program.membership
-    );
+    const availablePrograms = programs.filter(program => {
+      // Check if this program is assigned to the doctor
+      const isAssigned = selectedDoctor.assignedPrograms.some(assignment => {
+        // Handle different possible structures
+        const programId = typeof assignment === 'object' 
+          ? (assignment.program?._id || assignment.program) 
+          : assignment;
+        
+        // Convert to string for comparison to handle both ObjectId and string IDs
+        const programIdStr = programId?.toString();
+        const currentProgramIdStr = program._id?.toString();
+        
+        return currentProgramIdStr === programIdStr;
+      });
+      
+      // Check if program has valid memberships
+      const hasValidMemberships = Array.isArray(program.memberships) && program.memberships.length > 0;
+      
+      return isAssigned && hasValidMemberships;
+    });
+    
+    console.log('Available Programs:', availablePrograms.map(p => p.name));
+    return availablePrograms;
   };
   
   // Get patient display info
@@ -247,9 +286,10 @@ const AssignPatient = () => {
       name: patient.name,
       age: patient.age,
       problems: patient.problems,
-      currentDoctor: patient.doctor ? 
-        (typeof patient.doctor === 'object' ? patient.doctor.name : 'Assigned') : 
-        'None'
+      currentDoctor: patient?.doctor ?
+        (typeof patient.doctor === 'object' ? patient.doctor?.name : 'Assigned') :
+        null,
+      city: patient.city
     };
   };
   
@@ -305,7 +345,7 @@ const AssignPatient = () => {
             <p><strong>Doctor:</strong> {successData.doctor?.name}</p>
             {successData.patient?.selectedProgram?.program && (
               <p><strong>Program:</strong> {
-                typeof successData.patient.selectedProgram.program === 'object' 
+                typeof successData?.patient?.selectedProgram?.program === 'object' 
                   ? successData.patient.selectedProgram.program.name 
                   : 'Assigned Program'
               }</p>
@@ -351,9 +391,9 @@ const AssignPatient = () => {
               {patients.map(patient => (
                 <option key={patient._id} value={patient._id}>
                   {patient.name} ({patient.age} yrs) - {
-                    patient.doctor 
-                      ? `Currently assigned to ${typeof patient.doctor === 'object' ? patient.doctor.name : 'a doctor'}` 
-                      : 'Not assigned'
+                    patient?.doctor
+                      ? `Currently assigned to ${typeof patient.doctor === 'object' ? patient.doctor?.name : 'a doctor'}`
+                      : 'Not currently assigned to any doctor'
                   }
                 </option>
               ))}
@@ -423,7 +463,37 @@ const AssignPatient = () => {
                 ))}
               </select>
               {getAvailablePrograms().length === 0 && (
-                <p className="text-amber-500 text-sm mt-1">This doctor has no programs assigned.</p>
+                <p className="text-amber-500 text-sm mt-1">
+                  {(() => {
+                    const selectedDoctor = doctors.find(d => d._id === formData.doctorId);
+                    
+                    // Check if doctor has any assigned programs
+                    if (!selectedDoctor.assignedPrograms || !Array.isArray(selectedDoctor.assignedPrograms) || selectedDoctor.assignedPrograms.length === 0) {
+                      return "This doctor has no programs assigned.";
+                    }
+                    
+                    // Check if programs are found but have no memberships
+                    const doctorPrograms = selectedDoctor.assignedPrograms.map(p => 
+                      typeof p === 'object' ? (p.program?._id || p.program) : p
+                    );
+                    
+                    const foundPrograms = programs.filter(p => 
+                      doctorPrograms.some(id => id?.toString() === p._id?.toString())
+                    );
+                    
+                    if (foundPrograms.length > 0) {
+                      const validPrograms = foundPrograms.filter(p => 
+                        Array.isArray(p.memberships) && p.memberships.length > 0
+                      );
+                      
+                      if (validPrograms.length === 0) {
+                        return "Programs found, but they have no membership options defined.";
+                      }
+                    }
+                    
+                    return "This doctor has no programs assigned.";
+                  })()}
+                </p>
               )}
             </div>
           )}
@@ -441,13 +511,52 @@ const AssignPatient = () => {
                     id="duration"
                     name="duration"
                     value={formData.membership.duration}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      // Update the duration
+                      handleChange(e);
+                      
+                      // Auto-update price based on the selected duration
+                      const selectedProgram = programs.find(p => p._id === formData.programId);
+                      if (selectedProgram?.memberships) {
+                        const matchingMembership = selectedProgram.memberships.find(
+                          m => m.duration === e.target.value
+                        );
+                        if (matchingMembership) {
+                          // Update the price to match the selected duration
+                          handleChange({
+                            target: {
+                              name: "price",
+                              value: matchingMembership.price
+                            }
+                          });
+                        }
+                      }
+                    }}
                     className={`w-full p-2 border rounded-md ${errors.duration ? 'border-red-500' : 'border-gray-300'}`}
                     disabled={submitting}
                   >
-                    <option value="1 month">1 Month</option>
-                    <option value="3 months">3 Months</option>
-                    <option value="6 months">6 Months</option>
+                    {(() => {
+                      // Get the selected program
+                      const selectedProgram = programs.find(p => p._id === formData.programId);
+                      
+                      // If program has membership options, show them
+                      if (selectedProgram?.memberships && selectedProgram.memberships.length > 0) {
+                        return selectedProgram.memberships.map((membership, index) => (
+                          <option key={index} value={membership.duration}>
+                            {membership.duration}
+                          </option>
+                        ));
+                      } else {
+                        // Fallback options if no memberships defined
+                        return (
+                          <>
+                            <option value="1 month">1 Month</option>
+                            <option value="3 months">3 Months</option>
+                            <option value="6 months">6 Months</option>
+                          </>
+                        );
+                      }
+                    })()}
                   </select>
                   {errors.duration && (
                     <p className="text-red-500 text-sm mt-1">{errors.duration}</p>
@@ -463,7 +572,25 @@ const AssignPatient = () => {
                     id="price"
                     name="price"
                     value={formData.membership.price}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      // When duration changes, try to set the matching price from program memberships
+                      const selectedProgram = programs.find(p => p._id === formData.programId);
+                      if (e.target.name === "duration" && selectedProgram?.memberships) {
+                        const matchingMembership = selectedProgram.memberships.find(
+                          m => m.duration === e.target.value
+                        );
+                        if (matchingMembership) {
+                          handleChange({
+                            target: {
+                              name: "price",
+                              value: matchingMembership.price
+                            }
+                          });
+                          return;
+                        }
+                      }
+                      handleChange(e);
+                    }}
                     className={`w-full p-2 border rounded-md ${errors.price ? 'border-red-500' : 'border-gray-300'}`}
                     disabled={submitting}
                     min="0"

@@ -167,10 +167,10 @@ const Doctors = () => {
                     <img src={user} alt="" className="w-[80px]" />
                   </div>
                   <div>
-                    <p className="font-semibold">Dr. {doctor.name}</p>
-                    <p className="font-semibold text-gray-600">{doctor.qualifications.join(", ") || "Not specified"}</p>
+                    <p className="font-semibold">Dr. {doctor?.name}</p>
+                    <p className="font-semibold text-gray-600">{doctor?.qualifications?.join(", ") || "Not specified"}</p>
                     <p>
-                      {doctor.city}, {doctor.state || "NA"}
+                      {doctor?.city}, {doctor?.state || "NA"}
                     </p>
                   </div>
                 </div>
@@ -183,7 +183,7 @@ const Doctors = () => {
                   </div>
                   <div className="flex justify-between">
                     <p>Age</p>
-                    <p>{doctor.age || "N/A"}</p>
+                    <p>{doctor?.age || "N/A"}</p>
                   </div>
                   <div className="flex justify-between">
                     <p>Specialization</p>

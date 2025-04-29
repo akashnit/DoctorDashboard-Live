@@ -140,7 +140,7 @@ const Admin = () => {
               <div key={doctor._id} className="mb-3 border-b pb-2">
                 <p className="text-md font-medium">{doctor.name}</p>
                 <p className="text-gray-700 text-[10px] font-bold">
-                  {doctor.qualifications?.join(", ") || ""}
+                  {Array.isArray(doctor?.qualifications) ? doctor.qualifications.join(", ") : ""}
                 </p>
                 <p className="text-sm text-gray-600">
                   {doctor.domain} • {doctor.city}
@@ -182,9 +182,9 @@ const Admin = () => {
                 <p className="text-sm text-gray-600">
                   Age: {patient.age} • {patient.city}
                 </p>
-                {patient.doctor && (
+                {patient?.doctor && (
                   <p className="text-sm text-gray-500 italic">
-                    Doctor: {patient.doctor.name}
+                    Doctor: {patient.doctor?.name}
                   </p>
                 )}
               </div>

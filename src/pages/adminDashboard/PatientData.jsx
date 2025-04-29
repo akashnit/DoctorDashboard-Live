@@ -58,9 +58,9 @@ const PatientData = () => {
         {patient.medicalHistory && (
           <div className="sm:col-span-2"><strong>Medical History:</strong> {patient.medicalHistory}</div>
         )}
-        {patient.allergies?.length > 0 && (
+        {patient?.allergies?.length > 0 && (
           <div className="sm:col-span-2">
-            <strong>Allergies:</strong> {patient.allergies.join(", ")}
+            <strong>Allergies:</strong> {patient?.allergies?.join(", ") || "None listed"}
           </div>
         )}
         {emergencyContact?.name && (
